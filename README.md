@@ -1,4 +1,4 @@
-# workledger-dist
+# hiveram-dist
 
 Distribution package for [Hiveram](https://hiveram.com) — agent coordination layer. Pre-built binaries, skills, and install script.
 
@@ -15,7 +15,7 @@ Pre-built binaries, essential skills, and an install script that bootstraps any 
 ## Quick install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ppiankov/workledger-dist/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ppiankov/hiveram-dist/main/install.sh | bash
 ```
 
 This will:
@@ -32,13 +32,13 @@ If you prefer not to pipe to bash:
 ```bash
 # 1. Download the tarball for your platform
 # macOS Apple Silicon
-curl -LO https://github.com/ppiankov/workledger-dist/releases/download/v0.7.7/workledger_0.7.7_darwin_arm64.tar.gz
+curl -LO https://github.com/ppiankov/hiveram-dist/releases/download/v0.7.7/workledger_0.7.7_darwin_arm64.tar.gz
 
 # macOS Intel
-curl -LO https://github.com/ppiankov/workledger-dist/releases/download/v0.7.7/workledger_0.7.7_darwin_amd64.tar.gz
+curl -LO https://github.com/ppiankov/hiveram-dist/releases/download/v0.7.7/workledger_0.7.7_darwin_amd64.tar.gz
 
 # Linux amd64
-curl -LO https://github.com/ppiankov/workledger-dist/releases/download/v0.7.7/workledger_0.7.7_linux_amd64.tar.gz
+curl -LO https://github.com/ppiankov/hiveram-dist/releases/download/v0.7.7/workledger_0.7.7_linux_amd64.tar.gz
 
 # 2. Verify checksum
 sha256sum -c checksums.txt
@@ -52,7 +52,7 @@ chmod +x /usr/local/bin/workledger
 for skill in workledger write-wo load-context wrapup save-memory; do
     mkdir -p ~/.claude/skills/$skill
     curl -fsSL -o ~/.claude/skills/$skill/SKILL.md \
-        "https://raw.githubusercontent.com/ppiankov/workledger-dist/main/skills/$skill/SKILL.md"
+        "https://raw.githubusercontent.com/ppiankov/hiveram-dist/main/skills/$skill/SKILL.md"
 done
 
 # 5. Configure secrets
