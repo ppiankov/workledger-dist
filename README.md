@@ -101,4 +101,4 @@ Then start Claude Code in any project and run `/load-context` to verify the full
 
 ## License
 
-MIT
+[Business Source License 1.1](LICENSE) — use freely for internal and self-hosted deployments. See LICENSE for details.
