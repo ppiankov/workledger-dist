@@ -1,6 +1,6 @@
 # workledger-dist
 
-Distribution package for [workledger](https://hiveram.com) — structured work order storage for AI agent workflows.
+Distribution package for [Hiveram](https://hiveram.com) — agent coordination layer. Pre-built binaries, skills, and install script.
 
 ## What this is
 
