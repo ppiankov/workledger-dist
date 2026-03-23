@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# workledger installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/ppiankov/workledger-dist/main/install.sh | bash
+# hiveram installer
+# Usage: curl -fsSL https://raw.githubusercontent.com/ppiankov/hiveram-dist/main/install.sh | bash
 
-REPO="ppiankov/workledger-dist"
+REPO="ppiankov/hiveram-dist"
 BINARY_NAME="workledger"
 INSTALL_DIR="${WORKLEDGER_INSTALL_DIR:-/usr/local/bin}"
 SKILLS_DIR="$HOME/.claude/skills"
@@ -272,8 +272,8 @@ verify() {
 
 main() {
     echo ""
-    echo "  workledger installer"
-    echo "  ==================="
+    echo "  hiveram installer"
+    echo "  ================="
     echo ""
 
     install_binary
