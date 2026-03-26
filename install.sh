@@ -166,36 +166,62 @@ configure_secrets() {
         local input="/dev/stdin"
     fi
 
-    # Prompt for DSN if not set
-    if [ -z "${WORKLEDGER_DSN:-}" ]; then
+    # Connection mode: URL (recommended) or DSN (advanced)
+    if [ -z "${WORKLEDGER_URL:-}" ] && [ -z "${WORKLEDGER_DSN:-}" ]; then
         echo ""
-        echo "Enter your Neon PostgreSQL connection string (WORKLEDGER_DSN)."
-        echo "Format: postgresql://user:pass@host/dbname?sslmode=require"
-        printf "DSN: "
-        read -r dsn < "$input" || dsn=""
-        if [ -n "$dsn" ]; then
-            echo "export WORKLEDGER_DSN='${dsn}'" >> "$env_file"
-        else
-            warn "Skipped DSN -- workledger will use local SQLite"
-        fi
-    else
-        info "WORKLEDGER_DSN already set"
-    fi
+        echo "How will you connect to workledger?"
+        echo "  1) HTTP API (recommended) -- needs URL + API key"
+        echo "  2) Direct database -- needs PostgreSQL DSN"
+        echo "  3) Local only -- SQLite, no remote connection"
+        printf "Choice [1]: "
+        read -r mode < "$input" || mode=""
+        mode="${mode:-1}"
 
-    # Prompt for API key if not set
-    if [ -z "${WORKLEDGER_API_KEY:-}" ]; then
-        echo ""
-        echo "Enter your workledger API key (WORKLEDGER_API_KEY)."
-        echo "Generate one with: workledger keygen --id <name> --role admin --projects '*'"
-        printf "API key: "
-        read -r apikey < "$input" || apikey=""
-        if [ -n "$apikey" ]; then
-            echo "export WORKLEDGER_API_KEY='${apikey}'" >> "$env_file"
-        else
-            warn "Skipped API key -- HTTP API will not be available"
-        fi
+        case "$mode" in
+            1)
+                echo ""
+                echo "Enter your workledger server URL (WORKLEDGER_URL)."
+                echo "Example: https://wl-yourorg-prod.fly.dev"
+                printf "URL: "
+                read -r wl_url < "$input" || wl_url=""
+                if [ -n "$wl_url" ]; then
+                    echo "export WORKLEDGER_URL='${wl_url}'" >> "$env_file"
+                else
+                    warn "Skipped URL -- workledger will use local SQLite"
+                fi
+
+                echo ""
+                echo "Enter your workledger API key (WORKLEDGER_API_KEY)."
+                printf "API key: "
+                read -r apikey < "$input" || apikey=""
+                if [ -n "$apikey" ]; then
+                    echo "export WORKLEDGER_API_KEY='${apikey}'" >> "$env_file"
+                else
+                    warn "Skipped API key -- requests will be unauthenticated"
+                fi
+                ;;
+            2)
+                echo ""
+                echo "Enter your Neon PostgreSQL connection string (WORKLEDGER_DSN)."
+                echo "Format: postgresql://user:pass@host/dbname?sslmode=require"
+                printf "DSN: "
+                read -r dsn < "$input" || dsn=""
+                if [ -n "$dsn" ]; then
+                    echo "export WORKLEDGER_DSN='${dsn}'" >> "$env_file"
+                else
+                    warn "Skipped DSN -- workledger will use local SQLite"
+                fi
+                ;;
+            3)
+                info "Using local SQLite -- no remote connection"
+                ;;
+            *)
+                warn "Invalid choice -- defaulting to local SQLite"
+                ;;
+        esac
     else
-        info "WORKLEDGER_API_KEY already set"
+        [ -n "${WORKLEDGER_URL:-}" ] && info "WORKLEDGER_URL already set"
+        [ -n "${WORKLEDGER_DSN:-}" ] && info "WORKLEDGER_DSN already set"
     fi
 
     chmod 600 "$env_file"
