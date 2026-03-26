@@ -10,6 +10,11 @@ INSTALL_DIR="${WORKLEDGER_INSTALL_DIR:-/usr/local/bin}"
 SKILLS_DIR="$HOME/.claude/skills"
 CONFIG_DIR="$HOME/.workledger"
 
+# Collected during phase 3, used in phase 4
+COLLECTED_URL=""
+COLLECTED_KEY=""
+COLLECTED_DSN=""
+
 # --- helpers ---
 
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -104,50 +109,10 @@ install_skills() {
     info "Installed ${#skills[@]} skills"
 }
 
-# --- phase 3: MCP config ---
+# --- phase 3: connection setup ---
 
-configure_mcp() {
-    info "Configuring MCP server for Claude Code"
-
-    local settings="$HOME/.claude/settings.json"
-    mkdir -p "$(dirname "$settings")"
-
-    if [ ! -f "$settings" ]; then
-        echo '{}' > "$settings"
-    fi
-
-    # Check if workledger MCP is already configured
-    if grep -q '"workledger"' "$settings" 2>/dev/null; then
-        info "MCP already configured in ${settings}"
-        return
-    fi
-
-    # Use python3 (available on macOS) to safely merge JSON
-    python3 -c "
-import json, sys
-
-path = '$settings'
-with open(path) as f:
-    cfg = json.load(f)
-
-cfg.setdefault('mcpServers', {})
-cfg['mcpServers']['workledger'] = {
-    'command': '${INSTALL_DIR}/${BINARY_NAME}',
-    'args': ['serve', '--mcp']
-}
-
-with open(path, 'w') as f:
-    json.dump(cfg, f, indent=2)
-    f.write('\n')
-" || warn "Could not auto-configure MCP. Add manually to ${settings}"
-
-    info "MCP server added to ${settings}"
-}
-
-# --- phase 4: secrets ---
-
-configure_secrets() {
-    info "Configuring secrets"
+configure_connection() {
+    info "Configuring connection"
     mkdir -p "$CONFIG_DIR"
 
     local env_file="${CONFIG_DIR}/api-key.env"
@@ -186,6 +151,7 @@ configure_secrets() {
                 read -r wl_url < "$input" || wl_url=""
                 if [ -n "$wl_url" ]; then
                     echo "export WORKLEDGER_URL='${wl_url}'" >> "$env_file"
+                    COLLECTED_URL="$wl_url"
                 else
                     warn "Skipped URL -- workledger will use local SQLite"
                 fi
@@ -196,6 +162,7 @@ configure_secrets() {
                 read -r apikey < "$input" || apikey=""
                 if [ -n "$apikey" ]; then
                     echo "export WORKLEDGER_API_KEY='${apikey}'" >> "$env_file"
+                    COLLECTED_KEY="$apikey"
                 else
                     warn "Skipped API key -- requests will be unauthenticated"
                 fi
@@ -208,6 +175,7 @@ configure_secrets() {
                 read -r dsn < "$input" || dsn=""
                 if [ -n "$dsn" ]; then
                     echo "export WORKLEDGER_DSN='${dsn}'" >> "$env_file"
+                    COLLECTED_DSN="$dsn"
                 else
                     warn "Skipped DSN -- workledger will use local SQLite"
                 fi
@@ -220,8 +188,9 @@ configure_secrets() {
                 ;;
         esac
     else
-        [ -n "${WORKLEDGER_URL:-}" ] && info "WORKLEDGER_URL already set"
-        [ -n "${WORKLEDGER_DSN:-}" ] && info "WORKLEDGER_DSN already set"
+        [ -n "${WORKLEDGER_URL:-}" ] && { info "WORKLEDGER_URL already set"; COLLECTED_URL="${WORKLEDGER_URL}"; }
+        [ -n "${WORKLEDGER_DSN:-}" ] && { info "WORKLEDGER_DSN already set"; COLLECTED_DSN="${WORKLEDGER_DSN}"; }
+        [ -n "${WORKLEDGER_API_KEY:-}" ] && COLLECTED_KEY="${WORKLEDGER_API_KEY}"
     fi
 
     chmod 600 "$env_file"
@@ -251,6 +220,58 @@ configure_secrets() {
     fi
 }
 
+# --- phase 4: MCP config (uses connection vars from phase 3) ---
+
+configure_mcp() {
+    info "Configuring MCP server for Claude Code"
+
+    local settings="$HOME/.claude/settings.json"
+    mkdir -p "$(dirname "$settings")"
+
+    if [ ! -f "$settings" ]; then
+        echo '{}' > "$settings"
+    fi
+
+    # Build env block for MCP server based on collected connection info
+    local env_json="{}"
+    if [ -n "$COLLECTED_URL" ]; then
+        env_json="{\"WORKLEDGER_URL\": \"${COLLECTED_URL}\""
+        if [ -n "$COLLECTED_KEY" ]; then
+            env_json="${env_json}, \"WORKLEDGER_API_KEY\": \"${COLLECTED_KEY}\""
+        fi
+        env_json="${env_json}}"
+    elif [ -n "$COLLECTED_DSN" ]; then
+        env_json="{\"WORKLEDGER_DSN\": \"${COLLECTED_DSN}\"}"
+    fi
+
+    # Use python3 (available on macOS) to safely merge JSON
+    python3 -c "
+import json
+
+path = '$settings'
+with open(path) as f:
+    cfg = json.load(f)
+
+env = json.loads('$env_json')
+
+cfg.setdefault('mcpServers', {})
+mcp_entry = {
+    'command': '${INSTALL_DIR}/${BINARY_NAME}',
+    'args': ['serve', '--mcp']
+}
+if env:
+    mcp_entry['env'] = env
+
+cfg['mcpServers']['workledger'] = mcp_entry
+
+with open(path, 'w') as f:
+    json.dump(cfg, f, indent=2)
+    f.write('\n')
+" || warn "Could not auto-configure MCP. Add manually to ${settings}"
+
+    info "MCP server added to ${settings}"
+}
+
 # --- phase 5: verify ---
 
 verify() {
@@ -275,34 +296,36 @@ verify() {
     # MCP
     if grep -q '"workledger"' "$HOME/.claude/settings.json" 2>/dev/null; then
         info "  mcp: configured"
+        if grep -q 'WORKLEDGER_URL' "$HOME/.claude/settings.json" 2>/dev/null; then
+            info "  mcp env: URL mode"
+        elif grep -q 'WORKLEDGER_DSN' "$HOME/.claude/settings.json" 2>/dev/null; then
+            info "  mcp env: DSN mode"
+        else
+            info "  mcp env: local SQLite"
+        fi
     else
         warn "  mcp: not configured"
         ok=false
     fi
 
-    # Secrets
-    if [ -f "${CONFIG_DIR}/api-key.env" ]; then
-        # shellcheck disable=SC1091
-        source "${CONFIG_DIR}/api-key.env" 2>/dev/null || true
-        if [ -n "${WORKLEDGER_DSN:-}" ]; then
-            info "  dsn: set"
+    # Connection
+    if [ -n "$COLLECTED_URL" ]; then
+        info "  connection: ${COLLECTED_URL}"
+        # Quick health check
+        if curl -fsSL "${COLLECTED_URL}/healthz" >/dev/null 2>&1; then
+            info "  server: reachable"
         else
-            warn "  dsn: not set (using local SQLite)"
+            warn "  server: not reachable (check URL)"
         fi
-        if [ -n "${WORKLEDGER_API_KEY:-}" ]; then
-            info "  api key: set"
-        else
-            warn "  api key: not set (HTTP API unavailable)"
-        fi
+    elif [ -n "$COLLECTED_DSN" ]; then
+        info "  connection: Postgres (DSN set)"
     else
-        warn "  secrets: not configured"
-        ok=false
+        info "  connection: local SQLite"
     fi
 
     echo ""
     if $ok; then
-        info "Installation complete. Open a new terminal or run: source ~/.workledger/api-key.env"
-        info "Then start Claude Code and run /load-context to verify."
+        info "Installation complete. Start Claude Code -- workledger MCP tools are ready."
     else
         warn "Installation completed with warnings. Review the messages above."
     fi
@@ -320,9 +343,9 @@ main() {
     echo ""
     install_skills
     echo ""
-    configure_mcp
+    configure_connection
     echo ""
-    configure_secrets
+    configure_mcp
     echo ""
     verify
 }
