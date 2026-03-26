@@ -89,8 +89,14 @@ install_skills() {
     for skill in "${skills[@]}"; do
         local url="https://raw.githubusercontent.com/${REPO}/main/skills/${skill}/SKILL.md"
         mkdir -p "${SKILLS_DIR}/${skill}"
-        curl -fsSL -o "${SKILLS_DIR}/${skill}/SKILL.md" "$url" \
-            || warn "Failed to download skill: ${skill}"
+        local attempt
+        for attempt in 1 2 3; do
+            if curl -fsSL -o "${SKILLS_DIR}/${skill}/SKILL.md" "$url" 2>/dev/null; then
+                break
+            fi
+            [ "$attempt" -lt 3 ] && sleep 2
+        done
+        [ -f "${SKILLS_DIR}/${skill}/SKILL.md" ] || warn "Failed to download skill: ${skill}"
         info "  ${skill}"
     done
 
@@ -152,13 +158,21 @@ configure_secrets() {
         source "$env_file"
     fi
 
+    # When piped via curl|bash, stdin is the script itself.
+    # Read user input from /dev/tty instead.
+    if [ ! -t 0 ] && [ -e /dev/tty ]; then
+        local input="/dev/tty"
+    else
+        local input="/dev/stdin"
+    fi
+
     # Prompt for DSN if not set
     if [ -z "${WORKLEDGER_DSN:-}" ]; then
         echo ""
         echo "Enter your Neon PostgreSQL connection string (WORKLEDGER_DSN)."
         echo "Format: postgresql://user:pass@host/dbname?sslmode=require"
         printf "DSN: "
-        read -r dsn
+        read -r dsn < "$input" || dsn=""
         if [ -n "$dsn" ]; then
             echo "export WORKLEDGER_DSN='${dsn}'" >> "$env_file"
         else
@@ -174,7 +188,7 @@ configure_secrets() {
         echo "Enter your workledger API key (WORKLEDGER_API_KEY)."
         echo "Generate one with: workledger keygen --id <name> --role admin --projects '*'"
         printf "API key: "
-        read -r apikey
+        read -r apikey < "$input" || apikey=""
         if [ -n "$apikey" ]; then
             echo "export WORKLEDGER_API_KEY='${apikey}'" >> "$env_file"
         else
