@@ -13,8 +13,8 @@ Wrap up the current work: save state, commit, push. $ARGUMENTS
    - **Tier 1 (MCP):** `workledger_update_wo(project, id, status="done")` or `workledger_update_many(project, ids, status="done")`. Add note: `workledger_add_note(project, id, text="Completed: <SHA> -- <summary>")`
    - **Tier 2 (HTTP API):** if MCP is unavailable:
      - `source ~/.workledger/api-key.env`
-     - `curl -s --max-time 10 -X PATCH -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/json" 'https://workledger.fly.dev/api/v1/wo/<project>/<id>' -d '{"status":"done"}'`
-     - `curl -s --max-time 10 -X POST -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/json" 'https://workledger.fly.dev/api/v1/wo/<project>/<id>/note' -d '{"content":"Completed: <SHA> -- <summary>"}'`
+     - `curl -s --max-time 10 -X PATCH -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/json" '${WORKLEDGER_URL}/api/v1/wo/<project>/<id>' -d '{"status":"done"}'`
+     - `curl -s --max-time 10 -X POST -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/json" '${WORKLEDGER_URL}/api/v1/wo/<project>/<id>/note' -d '{"content":"Completed: <SHA> -- <summary>"}'`
    - **Tier 3 (flat file):** if both are unavailable and `docs/work-orders.md` exists, update status there
    - If no WOs were completed, skip this step
 
@@ -26,8 +26,8 @@ Wrap up the current work: save state, commit, push. $ARGUMENTS
    - Read MEMORY.md and all topic files from the local memory directory
    - **Tier 1 (MCP):** for each file, call `workledger_memory_put(project, key="memory/<filename>", content=...)`. Call `workledger_context_put(project, content=...)`
    - **Tier 2 (HTTP API):** if MCP is unavailable:
-     - `curl -s --max-time 10 -X PUT -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @<path> 'https://workledger.fly.dev/api/v1/blob/<project>/memory/<filename>'`
-     - `curl -s --max-time 10 -X PUT -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @docs/context.txt 'https://workledger.fly.dev/api/v1/blob/<project>/context'`
+     - `curl -s --max-time 10 -X PUT -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @<path> '${WORKLEDGER_URL}/api/v1/blob/<project>/memory/<filename>'`
+     - `curl -s --max-time 10 -X PUT -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @docs/context.txt '${WORKLEDGER_URL}/api/v1/blob/<project>/context'`
    - **Tier 3 (local only):** if both are unavailable, skip sync
    - Show: `Pushed N memory files and context to workledger`
 

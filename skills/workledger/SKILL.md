@@ -14,7 +14,7 @@ Use this skill when the user asks about work orders, backlog state, WO lookup, d
 2. **Tier 2 (CLI):** prefer `workledger` if on `PATH`, otherwise `~/go/bin/workledger`
 3. **Tier 3 (HTTP API):** if CLI is unavailable or times out (Neon free tier cold start ~5-10s):
    - Load key: `source ~/.workledger/api-key.env`
-   - Base URL: `https://workledger.fly.dev/api/v1`
+   - Base URL: `${WORKLEDGER_URL}/api/v1`
    - Auth: `Authorization: Bearer $WORKLEDGER_API_KEY`
    - Use `--max-time 10` on all curl calls
    - Key endpoints:

@@ -15,9 +15,9 @@ Load project context so an agent can resume work on this project without prior c
      - Call `workledger_context_pull(project)` -- if remote is newer, write to `docs/context.txt`
    - **Tier 2 (HTTP API):** if MCP is unavailable:
      - `source ~/.workledger/api-key.env`
-     - List blobs: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/blob/<project>'`
-     - Pull each blob: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/blob/<project>/memory/<key>'`
-     - Pull context: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/blob/<project>/context'`
+     - List blobs: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/blob/<project>'`
+     - Pull each blob: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/blob/<project>/memory/<key>'`
+     - Pull context: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/blob/<project>/context'`
    - **Tier 3 (local only):** if both are unavailable, skip and proceed with local files
    - Show: `Synced N memory files and context from workledger (last updated <date> from <machine>)`
 2. Read `CLAUDE.md` in the project root
@@ -25,8 +25,8 @@ Load project context so an agent can resume work on this project without prior c
 4. **Load work orders** -- use the three-tier fallback:
    - **Tier 1 (MCP):** call `workledger_list_wos(project)` for open WOs, `workledger_stats(project)` for counts, `workledger_blocked(project)` for blockers. Recent: `workledger_list_wos(project, done_since="YYYY-MM-DD")` with 7 days ago
    - **Tier 2 (HTTP API):** if MCP is unavailable:
-     - `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/wo?project=<project>&status=open'`
-     - `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/stats?project=<project>'`
+     - `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/wo?project=<project>&status=open'`
+     - `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/stats?project=<project>'`
    - **Tier 3 (flat file):** if both are unavailable and `docs/work-orders.md` exists, read it
 5. If `docs/plans/` exists and contains .md files, list them
 6. Summarize in 5-10 bullets: what the project is, current status, next WO, blockers

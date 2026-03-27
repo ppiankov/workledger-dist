@@ -12,8 +12,8 @@ Write work orders for: $ARGUMENTS
    - **Tier 1 (MCP):** call `workledger_list_wos(project="<project-name>")` to get all WOs, find the highest ID. Dedup: `workledger_search(query="<title keywords>", project="<project-name>")`
    - **Tier 2 (HTTP API):** if MCP is unavailable:
      - `source ~/.workledger/api-key.env`
-     - List: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/wo?project=<project>'`
-     - Search: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" 'https://workledger.fly.dev/api/v1/search?q=<keywords>&project=<project>'`
+     - List: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/wo?project=<project>'`
+     - Search: `curl -s --max-time 10 -H "Authorization: Bearer $WORKLEDGER_API_KEY" '${WORKLEDGER_URL}/api/v1/search?q=<keywords>&project=<project>'`
    - **Tier 3 (flat file):** if both are unavailable, find `docs/work-orders.md` and continue existing numbering
    - If a similar WO is found, warn the user before creating a duplicate
 
@@ -30,7 +30,7 @@ Write work orders for: $ARGUMENTS
 6. **Save the WO** -- STOP: you MUST have run the dedup check from step 1. Use the three-tier fallback:
    - **Tier 1 (MCP):** `workledger_create_wo(project, title, priority, sections={...}, tags=[...])`
    - **Tier 2 (HTTP API):** if MCP is unavailable:
-     - `curl -s --max-time 10 -X POST -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/json" 'https://workledger.fly.dev/api/v1/wo' -d '{"project":"<project>","title":"<title>","priority":"<P0-P3>","tags":[...],"sections":{...}}'`
+     - `curl -s --max-time 10 -X POST -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/json" '${WORKLEDGER_URL}/api/v1/wo' -d '{"project":"<project>","title":"<title>","priority":"<P0-P3>","tags":[...],"sections":{...}}'`
    - **Tier 3 (flat file):** append to `docs/work-orders.md`
    - If Tier 1 or 2 succeeds and `docs/work-orders.md` exists, also append there (dual-write)
 

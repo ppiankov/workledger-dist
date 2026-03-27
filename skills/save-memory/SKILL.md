@@ -21,7 +21,7 @@ Save current memory state and sync to workledger. $ARGUMENTS
    - **Tier 1 (MCP):** for each file, call `workledger_memory_put(project="<project>", key="memory/<filename>", content=<file contents>)`
    - **Tier 2 (HTTP API):** if MCP is unavailable:
      - `source ~/.workledger/api-key.env`
-     - `curl -s --max-time 10 -X PUT -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @<local-path> 'https://workledger.fly.dev/api/v1/blob/<project>/memory/<filename>'`
+     - `curl -s --max-time 10 -X PUT -H "Authorization: Bearer $WORKLEDGER_API_KEY" -H "Content-Type: application/octet-stream" --data-binary @<local-path> '${WORKLEDGER_URL}/api/v1/blob/<project>/memory/<filename>'`
    - **Tier 3 (local only):** if both are unavailable, report "Memory saved locally only -- workledger sync skipped"
    - Show: `Pushed N memory files to workledger`
 
